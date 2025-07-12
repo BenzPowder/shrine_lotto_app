@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash # For 
 from linebot_handler import handler
 from functools import wraps
 from flask import session, redirect, url_for
+import certifi
 # Removed: bs4, time, re, apscheduler, waitress (specific imports for scraping, scheduling)
 
 load_dotenv()  # โหลดตัวแปรจากไฟล์ .env เข้าสู่ environment
@@ -24,7 +25,8 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_key_for_dev') 
 # For local development, use default MongoDB URI
 # For deployment, ensure you configure MONGODB_URI environment variable
 mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
-client = MongoClient(mongo_uri)
+# client = MongoClient(mongo_uri)
+client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where())
 db = client.shrine_lotto # Database name
 
 # Collection for lottery results (unused but kept for consistency)
