@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ / สมัครสมาชิก - ศาลพระภูมิให้โชค</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN for 3D/particle effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a; /* สีพื้นหลังดำเข้ม */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            position: relative; /* Ensure body is relative for fixed canvas */
+        }
+        /* Styles for the Three.js canvas container */
+        #threejs-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all content */
+            pointer-events: none; /* Allow clicks to pass through */
+            opacity: 0.2; /* Subtle opacity for the smoke */
+        }
+        .auth-card {
+            background-color: #2a2a2a; /* สีพื้นหลัง Card เข้ม */
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); /* เงาเข้มขึ้น */
+            border: 1px solid #333333; /* สีขอบเข้ม */
+            color: #e0e0e0; /* สีตัวอักษรสว่าง */
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #444444; /* สีขอบเข้ม */
+            background-color: #1a1a1a; /* สีพื้นหลัง input เข้ม */
+            color: #e0e0e0; /* สีตัวอักษร input สว่าง */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #b91c1c; /* สีแดงเมื่อ focus */
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.3); /* เงาสีแดง */
+        }
+        .btn-primary {
+            background-color: #b91c1c; /* สีแดงหลัก */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background-color: #8b0000; /* สีแดงเข้มขึ้นเมื่อ hover */
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            cursor: pointer;
+            color: #b0b0b0; /* สีตัวอักษร tab ไม่ active */
+        }
+        .tab-btn.active {
+            background-color: #b91c1c; /* สีแดงเมื่อ active */
+            color: white;
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #333333; /* สีเข้มขึ้นเมื่อ hover */
+        }
+        a {
+            color: #b91c1c; /* สีลิงก์แดง */
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black">
+    <!-- Three.js Smoke Canvas Container -->
+    <div id="threejs-container"></div>
+
+    <div class="auth-card p-8 md:p-10 max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold text-gray-100 mb-6">ศาลพระภูมิให้โชค</h1>
+
+        <div class="flex justify-center mb-6 border-b border-gray-700">
+            <button id="login-tab" class="tab-btn active" onclick="showTab('login')">เข้าสู่ระบบ</button><br>
+            <!-- <button id="register-tab" class="tab-btn" onclick="showTab('register')">สมัครสมาชิก</button> -->
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-5" action="/auth/login" method="POST">
+            <div>
+                <input type="text" id="login-username" name="username" placeholder="ชื่อผู้ใช้งาน" class="input-field" required>
+            </div>
+            <div>
+                <input type="password" id="login-password" name="password" placeholder="รหัสผ่าน" class="input-field" required>
+            </div>
+            <button type="submit" class="btn-primary mt-4">เข้าสู่ระบบ</button>
+            <!-- <p class="text-sm text-gray-400 mt-4">ไม่มีบัญชี? <a href="#" class="text-red-500 hover:underline" onclick="showTab('register'); return false;">สมัครสมาชิกที่นี่</a></p> -->
+            <p class="text-sm text-gray-400 mt-4">ไม่มีบัญชี? <a href="/register" class="text-red-500 hover:underline">สมัครสมาชิกที่นี่</a>
+</p>
+</p> 
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="space-y-5 hidden" action="/auth/register" method="POST">
+            <div>
+                <input type="text" id="register-username" name="username" placeholder="ชื่อผู้ใช้งาน" class="input-field" required>
+            </div>
+            <div>
+                <input type="password" id="register-password" name="password" placeholder="รหัสผ่าน" class="input-field" required>
+            </div>
+            <div>
+                <input type="password" id="register-confirm-password" name="confirm_password" placeholder="ยืนยันรหัสผ่าน" class="input-field" required>
+            </div>
+            <button type="submit" class="btn-primary mt-4">สมัครสมาชิก</button>
+            <p class="text-sm text-gray-400 mt-4">มีบัญชีอยู่แล้ว? <a href="#" class="text-red-500 hover:underline" onclick="showTab('login'); return false;">เข้าสู่ระบบที่นี่</a></p>
+        </form>
+
+        <script>
+            function showTab(tabId) {
+                const loginForm = document.getElementById('login-form');
+                const registerForm = document.getElementById('register-form');
+                const loginTabBtn = document.getElementById('login-tab');
+                const registerTabBtn = document.getElementById('register-tab');
+
+                if (tabId === 'login') {
+                    loginForm.classList.remove('hidden');
+                    registerForm.classList.add('hidden');
+                    loginTabBtn.classList.add('active');
+                    registerTabBtn.classList.remove('active');
+                } else {
+                    loginForm.classList.add('hidden');
+                    registerForm.classList.remove('hidden');
+                    loginTabBtn.classList.remove('active');
+                    registerTabBtn.classList.add('active');
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const loginForm = document.getElementById('login-form');
+                const registerForm = document.getElementById('register-form');
+
+                if (loginForm) {
+                    loginForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(loginForm);
+                        const response = await fetch('/auth/login', {
+                            method: 'POST',
+                            body: new URLSearchParams(formData).toString(),
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success && data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert(data.message || 'Login failed.');
+                        }
+                    });
+                }
+
+                if (registerForm) {
+                    registerForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(registerForm);
+                        const response = await fetch('/auth/register', {
+                            method: 'POST',
+                            body: new URLSearchParams(formData).toString(),
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success && data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert(data.message || 'Registration failed.');
+                        }
+                    });
+                }
+            });
+        </script>
+    </div>
+
+    <!-- Three.js Smoke Particle Animation -->
+    <script>
+        window.onload = function() {
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true }); // alpha: true for transparent background
+            
+            // Get the container element for Three.js canvas
+            const threejsContainer = document.getElementById('threejs-container');
+            if (threejsContainer) {
+                threejsContainer.appendChild(renderer.domElement);
+            } else {
+                // Fallback if container not found (should not happen with correct HTML)
+                document.body.appendChild(renderer.domElement);
+            }
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0); // Clear color to transparent black
+
+            // Adjust camera position
+            camera.position.z = 5;
+
+            // Particle properties
+            const particleCount = 1000;
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            // sizes are handled by PointsMaterial.size or custom attribute based on complexity.
+            // For simplicity with PointsMaterial, we'll use a uniform size set on the material.
+
+            // Particle material (subtle white/gray color for smoke)
+            const material = new THREE.PointsMaterial({
+                size: 0.5, // Uniform size for all particles
+                vertexColors: false, // If false, material.color is used. If true, particles.attributes.color is used.
+                color: 0xcccccc, // A light gray for smoke particles
+                transparent: true,
+                opacity: 0.1, // Initial subtle opacity
+                blending: THREE.AdditiveBlending // For a softer, glowy effect
+            });
+
+            for (let i = 0; i < particleCount; i++) {
+                // Random position within a volume (e.g., -5 to 5 in x, y, z)
+                positions.push((Math.random() - 0.5) * 20); // x
+                positions.push((Math.random() - 0.5) * 20); // y
+                positions.push((Math.random() - 0.5) * 20); // z
+            }
+
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            
+            const particleSystem = new THREE.Points(particles, material);
+            scene.add(particleSystem);
+
+            // Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Animate particles (make them float upwards, fade out, and loop)
+                const positionsArray = particles.attributes.position.array;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    // Move particles upwards
+                    positionsArray[i * 3 + 1] += 0.01; // Y-axis (upwards)
+                    
+                    // Reset position when they go too high
+                    if (positionsArray[i * 3 + 1] > 10) {
+                        positionsArray[i * 3 + 1] = -10; // Reset to bottom
+                    }
+                }
+                particles.attributes.position.needsUpdate = true; // Tell Three.js positions have changed
+
+                // Simple camera rotation for a more dynamic feel
+                camera.rotation.y += 0.0005;
+                camera.rotation.x += 0.0002;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+    </script>
+</body>
+</html>

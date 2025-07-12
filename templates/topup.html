@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เติมเครดิต - ศาลพระภูมิให้โชค</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- qrious library for QR Code generation -->
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <!-- Three.js CDN for 3D/particle effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a; /* สีพื้นหลังดำเข้ม */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            position: relative; /* Ensure body is relative for fixed canvas */
+            margin: 0; /* Clear default browser margin */
+            padding: 0; /* Clear default browser padding */
+        }
+        /* Styles for the Three.js canvas */
+        #smokeCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all content */
+            pointer-events: none; /* Allow clicks to pass through */
+            opacity: 0.2; /* Subtle opacity */
+        }
+        .topup-card {
+            background-color: #2a2a2a; /* สีพื้นหลัง Card เข้ม */
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); /* เงาเข้มขึ้น */
+            border: 1px solid #333333; /* สีขอบเข้ม */
+            color: #e0e0e0; /* สีตัวอักษรสว่าง */
+        }
+        .btn-primary {
+            background-color: #b91c1c; /* สีแดงหลัก */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background-color: #8b0000; /* สีแดงเข้มขึ้นเมื่อ hover */
+        }
+        .qr-code-placeholder {
+            width: 200px;
+            height: 200px;
+            background-color: #000000; /* พื้นหลัง QR Code ดำ */
+            border: 1px solid #444444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #b0b0b0; /* สีตัวอักษร placeholder */
+            border-radius: 8px;
+            margin: 0 auto; /* Center the QR code */
+            overflow: hidden; /* Hide overflow if QR code is slightly larger */
+        }
+        /* Style for the generated canvas QR code */
+        .qr-canvas {
+            width: 100%;
+            height: 100%;
+            display: block; /* Ensure canvas fills its container */
+        }
+        .message-box {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-weight: 500;
+            display: none; /* Hidden by default */
+        }
+        .message-box.success {
+            background-color: #1a3a1a; /* เขียวเข้ม */
+            color: #34d399; /* เขียวอ่อน */
+            border: 1px solid #047857;
+        }
+        .message-box.error {
+            background-color: #331a1a; /* แดงเข้ม */
+            color: #fb923c; /* ส้มอ่อน */
+            border: 1px solid #c2410c;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #444444; /* สีขอบเข้ม */
+            background-color: #1a1a1a; /* สีพื้นหลัง input เข้ม */
+            color: #e0e0e0; /* สีตัวอักษร input สว่าง */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #b91c1c; /* สีแดงเมื่อ focus */
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.3); /* เงาสีแดง */
+        }
+        a {
+            color: #b91c1c; /* สีลิงก์แดง */
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black">
+    <!-- Three.js Smoke Canvas will be appended directly to body by JS -->
+
+    <div class="topup-card p-8 md:p-10 max-w-lg w-full text-center">
+        <h1 class="text-3xl font-bold text-gray-100 mb-6">เติมเครดิต</h1>
+        <p class="text-gray-300 mb-4">เครดิตปัจจุบัน: <span class="font-bold text-green-500" id="current-credits">{{ credits }}</span></p>
+
+        <div class="space-y-4 mb-6">
+            <label for="topup-amount" class="block text-gray-200 text-left font-medium mb-1">เลือกจำนวนเงินที่ต้องการเติม:</label>
+            <select id="topup-amount" class="input-field px-4 py-2 rounded-lg border focus:ring focus:ring-red-600">
+                <option value="5">5 บาท (ได้รับ 5 เครดิต)</option>
+                <option value="10">10 บาท (ได้รับ 10 เครดิต)</option>
+                <option value="20">20 บาท (ได้รับ 20 เครดิต)</option>
+                <option value="50">50 บาท (ได้รับ 50 เครดิต)</option>
+                <option value="100">100 บาท (ได้รับ 100 เครดิต)</option>
+                <option value="200">200 บาท (ได้รับ 200 เครดิต)</option>
+                <option value="500">500 บาท (ได้รับ 500 เครดิต)</option>
+                <option value="1000">1000 บาท (ได้รับ 1000 เครดิต)</option>
+            </select>
+        </div>
+
+        <div id="qr-code-section" class="hidden">
+            <p class="text-gray-300 mb-4">สแกน QR Code เพื่อชำระเงิน:</p>
+            <div class="qr-code-placeholder mb-6">
+                <!-- QR Code will be generated into this canvas element -->
+                <canvas id="qr-canvas" class="qr-canvas"></canvas>
+            </div>
+            <p class="text-red-400 text-sm mb-4">ในเวอร์ชันจริงจะต้องมีระบบตรวจสอบการโอนเงินอัตโนมัติ</p>
+            <button id="confirm-payment-btn" class="btn-primary">ยืนยันการโอนเงิน (จำลอง)</button>
+        </div>
+        
+        <div id="message-box" class="message-box"></div>
+
+        <button id="generate-qr-btn" class="btn-primary mb-4">สร้าง QR Code</button>
+
+        <p class="text-sm text-gray-400 mt-6">
+            <a href="/" class="text-red-500 hover:underline">กลับสู่หน้าหลัก</a>
+        </p>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const generateQrBtn = document.getElementById('generate-qr-btn');
+                const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+                const qrCodeSection = document.getElementById('qr-code-section');
+                const topupAmountSelect = document.getElementById('topup-amount');
+                const currentCreditsDisplay = document.getElementById('current-credits');
+                const messageBox = document.getElementById('message-box');
+                const qrCanvasElement = document.getElementById('qr-canvas'); // Get the canvas element
+
+                function showMessage(message, type) {
+                    messageBox.textContent = message;
+                    messageBox.className = 'message-box'; // Reset classes
+                    messageBox.classList.add(type);
+                    messageBox.style.display = 'block';
+                }
+
+                generateQrBtn.addEventListener('click', () => {
+                    const amount = topupAmountSelect.value;
+                    const qrData = `PromptPay ID (Dummy): 08X-XXX-XXXX\nAmount: ${amount} THB`; 
+
+                    try {
+                        new QRious({
+                            element: qrCanvasElement, 
+                            value: qrData,
+                            size: 200, 
+                            padding: 10,
+                            background: 'white',
+                            foreground: 'black' 
+                        });
+                        
+                        qrCodeSection.classList.remove('hidden');
+                        generateQrBtn.classList.add('hidden');
+                        messageBox.style.display = 'none'; 
+                    } catch (e) {
+                        console.error('Error generating QR code:', e);
+                        showMessage('ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่', 'error');
+                    }
+                });
+
+                confirmPaymentBtn.addEventListener('click', async () => {
+                    const amount = topupAmountSelect.value;
+                    try {
+                        const response = await fetch('/api/topup_confirm', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ amount: parseInt(amount) }),
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            showMessage(data.message || `เติมเครดิตสำเร็จ ${amount} เครดิต!`, 'success');
+                            currentCreditsDisplay.textContent = data.new_credits; 
+                            qrCodeSection.classList.add('hidden'); 
+                            generateQrBtn.classList.remove('hidden'); 
+                        } else {
+                            showMessage(data.message || 'ไม่สามารถยืนยันการโอนเงินได้ กรุณาตรวจสอบและลองใหม่', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error during top-up confirmation:', error);
+                        showMessage('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่', 'error');
+                    }
+                });
+            });
+        </script>
+    </div>
+
+    <!-- Three.js Smoke Particle Animation -->
+    <script>
+        window.onload = function() {
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true }); 
+            
+            // Append renderer's canvas to the body directly for full background
+            document.body.appendChild(renderer.domElement);
+            renderer.domElement.id = 'smokeCanvas'; // Assign ID for styling
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0); 
+
+            // Adjust camera position
+            camera.position.z = 5;
+
+            // Particle properties
+            const particleCount = 1000;
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.5, 
+                vertexColors: false, 
+                color: 0xcccccc, 
+                transparent: true,
+                opacity: 0.1, 
+                blending: THREE.AdditiveBlending 
+            });
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push((Math.random() - 0.5) * 20); 
+                positions.push((Math.random() - 0.5) * 20); 
+                positions.push((Math.random() - 0.5) * 20); 
+            }
+
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            
+            const particleSystem = new THREE.Points(particles, material);
+            scene.add(particleSystem);
+
+            // Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                const positionsArray = particles.attributes.position.array;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    positionsArray[i * 3 + 1] += 0.01; 
+                    
+                    if (positionsArray[i * 3 + 1] > 10) {
+                        positionsArray[i * 3 + 1] = -10; 
+                    }
+                }
+                particles.attributes.position.needsUpdate = true; 
+
+                camera.rotation.y += 0.0005;
+                camera.rotation.x += 0.0002;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+    </script>
+</body>
+</html>

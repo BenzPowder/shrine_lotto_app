@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - อัปเดตผลหวยย้อนหลัง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-6 min-h-screen">
+  <div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-red-500">อัปเดตผลหวยย้อนหลัง</h1>
+
+    <p class="mb-4">กรอกข้อมูลผลหวยย้อนหลังในรูปแบบ JSON เช่น:</p>
+    <pre class="bg-gray-700 p-4 rounded mb-4 text-sm overflow-x-auto">[
+  {"date": "2025-07-01", "two_digits": "45"},
+  {"date": "2025-06-16", "two_digits": "23"}
+]</pre>
+
+    <textarea id="lottoResults" rows="10" class="w-full p-3 rounded bg-gray-700 text-white" placeholder='วาง JSON ที่นี่'></textarea>
+
+    <button
+      class="mt-4 bg-red-600 hover:bg-red-700 px-6 py-3 rounded text-lg font-semibold"
+      onclick="submitUpdate()"
+    >ส่งข้อมูล</button>
+
+    <p id="responseMessage" class="mt-4"></p>
+
+    <a href="/" class="inline-block mt-6 text-red-500 hover:text-red-700">&larr; กลับหน้าจัดการผู้ใช้</a>
+  </div>
+
+<script>
+  async function submitUpdate() {
+    const rawData = document.getElementById('lottoResults').value;
+    let lottoData;
+    try {
+      lottoData = JSON.parse(rawData);
+    } catch(e) {
+      document.getElementById('responseMessage').textContent = 'ข้อมูล JSON ไม่ถูกต้อง!';
+      return;
+    }
+    try {
+      const res = await fetch('/admin/update_lotto', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({lotto_results: lottoData})
+      });
+      const data = await res.json();
+      document.getElementById('responseMessage').textContent = data.message;
+      if(data.success) {
+        document.getElementById('lottoResults').value = '';
+      }
+    } catch(e) {
+      document.getElementById('responseMessage').textContent = 'เกิดข้อผิดพลาด: ' + e;
+    }
+  }
+</script>
+
+</body>
+</html>

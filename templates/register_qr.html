@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>สมัครสมาชิก - สแกน QR Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1rem;
+            color: #b91c1c;
+        }
+        #qr-canvas {
+            margin: 1rem auto;
+            width: 250px;
+            height: 250px;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 0 10px rgba(185, 28, 28, 0.7);
+        }
+        a {
+            color: #b91c1c;
+            font-size: 1.2rem;
+            word-break: break-all;
+            margin-top: 1rem;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>สมัครสมาชิกผ่าน LINE</h1>
+    <canvas id="qr-canvas"></canvas>
+    <a href="{{ line_qr_link }}" target="_blank" rel="noopener">คลิกที่นี่หากสแกน QR Code ไม่ได้</a>
+
+    <!-- ปุ่มกลับหน้าหลัก -->
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('index') }}" 
+        style="
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #b91c1c;
+            color: white;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            transition: background-color 0.3s ease;
+        "
+        onmouseover="this.style.backgroundColor='#8b0000';"
+        onmouseout="this.style.backgroundColor='#b91c1c';"
+        >
+            กลับหน้าหลัก
+        </a>
+    </div>
+
+    <script>
+        // Generate QR code for LINE link
+        const qr = new QRious({
+            element: document.getElementById('qr-canvas'),
+            value: '{{ line_qr_link }}',
+            size: 250,
+            level: 'H'
+        });
+    </script>
+</body>
+</html>

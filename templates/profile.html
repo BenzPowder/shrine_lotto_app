@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <title>โปรไฟล์ของฉัน - ประวัติการเติมเครดิตและขอเลข</title>
+    <script>
+        async function loadTransactions() {
+            const res = await fetch('/api/transactions');
+            const data = await res.json();
+            const list = document.getElementById('transaction-list');
+            if (data.success) {
+                list.innerHTML = '';
+                data.transactions.forEach(tx => {
+                    const li = document.createElement('li');
+                    li.textContent = `[${new Date(tx.timestamp).toLocaleString()}] ประเภท: ${tx.type} จำนวน: ${tx.amount} เลข: ${tx.lotto_number || '-'}`;
+                    list.appendChild(li);
+                });
+            } else {
+                list.textContent = 'ไม่พบข้อมูล หรือ กรุณาเข้าสู่ระบบ';
+            }
+        }
+        window.onload = loadTransactions;
+    </script>
+</head>
+<body>
+    <h1>ประวัติการทำรายการของคุณ</h1>
+    <ul id="transaction-list">
+        <li>กำลังโหลดข้อมูล...</li>
+    </ul>
+    <a href="/">กลับหน้าหลัก</a>
+</body>
+</html>

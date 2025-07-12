@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - จัดการผู้ใช้งาน</title>
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6">
+
+    <div class="max-w-5xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold mb-6 text-red-500">Admin Panel - จัดการผู้ใช้งาน</h1>
+        
+        <table class="min-w-full table-auto border-collapse border border-gray-700">
+            <thead>
+                <tr class="bg-gray-700 text-gray-300">
+                    <th class="border border-gray-600 px-4 py-2">Username</th>
+                    <th class="border border-gray-600 px-4 py-2">Role</th>
+                    <th class="border border-gray-600 px-4 py-2">Credits</th>
+                    <th class="border border-gray-600 px-4 py-2">สถานะ</th>
+                    <th class="border border-gray-600 px-4 py-2">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="text-center border border-gray-700 hover:bg-gray-700">
+                    <td class="border border-gray-600 px-4 py-2">{{ user.username }}</td>
+                    <td class="border border-gray-600 px-4 py-2">
+                        <form id="form-{{ user.username }}" method="POST" action="{{ url_for('admin_update_user', username=user.username) }}" class="inline-block">
+                            <select name="role" class="bg-gray-800 text-white p-1 rounded">
+                                <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                    </td>
+                    <td class="border border-gray-600 px-4 py-2">
+                            <input type="number" name="credits" value="{{ user.credits }}" class="w-20 bg-gray-800 text-white p-1 rounded" min="0" required>
+                    </td>
+                    <td class="border border-gray-600 px-4 py-2">
+                        {% if user.is_banned %}
+                            <span class="text-red-400 font-bold">ถูกแบน</span>
+                        {% else %}
+                            <span class="text-green-400 font-bold">ปกติ</span>
+                        {% endif %}
+                    </td>
+                    <td class="border border-gray-600 px-4 py-2 space-x-2">
+                            <button type="submit" class="btn-primary px-4 py-1 rounded">บันทึก</button>
+                        </form>
+                        {% if user.is_banned %}
+                        <button 
+                            class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+                            onclick="unbanUser('{{ user.username }}', this)">ปลดแบน</button>
+                        {% else %}
+                        <button
+                            class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm"
+                            onclick="banUser('{{ user.username }}', this)">แบน</button>
+                        {% endif %}
+                        <button
+                            class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm"
+                            onclick="deleteUser('{{ user.username }}', this)">ลบ</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="/" class="inline-block mt-6 text-red-500 hover:text-red-700">&larr; กลับหน้าหลัก</a>
+    </div>
+
+    <script>
+        async function banUser(username, btn) {
+            if (!confirm(`ต้องการแบนผู้ใช้ ${username} จริงหรือไม่?`)) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/admin/users/ban/${username}`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                if(data.success) location.reload();
+            } catch(err) {
+                alert('เกิดข้อผิดพลาด: ' + err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function unbanUser(username, btn) {
+            if (!confirm(`ต้องการปลดแบนผู้ใช้ ${username} จริงหรือไม่?`)) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/admin/users/unban/${username}`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                if(data.success) location.reload();
+            } catch(err) {
+                alert('เกิดข้อผิดพลาด: ' + err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteUser(username, btn) {
+            if (!confirm(`ต้องการลบผู้ใช้ ${username} จริงหรือไม่? การลบนี้ไม่สามารถกู้คืนได้!`)) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/admin/users/delete/${username}`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                if(data.success) location.reload();
+            } catch(err) {
+                alert('เกิดข้อผิดพลาด: ' + err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+</html>

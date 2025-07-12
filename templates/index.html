@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ศาลพระภูมิให้หวยออนไลน์</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN for 3D/particle effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* กำหนด font-family เป็น Inter (หรือ font ที่เหมาะสมสำหรับภาษาไทย) */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a; /* สีพื้นหลังดำเข้ม */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* จัดให้อยู่ด้านบนของจอ */
+            min-height: 100vh;
+            padding: 2rem 0; /* เพิ่ม padding ด้านบนและล่าง */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            position: relative; /* Ensure body is relative for fixed canvas */
+        }
+        /* Styles for the Three.js canvas container */
+        #threejs-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all content */
+            pointer-events: none; /* Allow clicks to pass through */
+            opacity: 0.2; /* Subtle opacity for the smoke */
+        }
+
+        /* Custom styles เพื่อเพิ่มความขลังและรายละเอียด */
+        .shrine-container {
+            background: linear-gradient(to bottom, #2a2a2a, #1a1a1a); /* Gradient สีดำเข้ม */
+            border: 3px solid #b91c1c; /* สีแดงเข้ม */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6); /* เงาเข้มขึ้น */
+            position: relative;
+            overflow: hidden; /* ซ่อนส่วนเกิน */
+        }
+        .shrine-image {
+            filter: brightness(0.8) drop-shadow(5px 5px 10px rgba(0,0,0,0.5)); /* ปรับความสว่างและเงา */
+        }
+        .data-card {
+            background-color: #2a2a2a; /* สีพื้นหลัง Card เข้ม */
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); /* เงาเข้มขึ้น */
+            border: 1px solid #333333; /* สีขอบเข้ม */
+            color: #e0e0e0; /* สีตัวอักษรสว่าง */
+        }
+        .ai-analysis {
+            background-color: #331a1a; /* สีแดงอมดำอ่อนๆ */
+            border-left: 5px solid #b91c1c; /* สีแดงเข้ม */
+            color: #e0e0e0; /* สีตัวอักษรสว่าง */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .btn-primary {
+            background-color: #b91c1c; /* สีแดงหลัก */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px; /* วงกลม */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .btn-primary:hover {
+            background-color: #8b0000; /* สีแดงเข้มขึ้นเมื่อ hover */
+        }
+        .btn-secondary {
+            background-color: #4a0505; /* สีกรมท่าอ่อนๆ (แดงเข้มเกือบดำ) */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .btn-secondary:hover {
+            background-color: #330000; /* สีเข้มขึ้นเมื่อ hover */
+        }
+        /* ตู้บูชาธูป */
+        .incense-box {
+            background-color: #333333; /* สีเทาเข้ม */
+            border: 3px solid #8b0000; /* สีแดงเข้ม */
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: #e0e0e0; /* สีตัวอักษรสว่าง */
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .incense-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+        }
+        /* For image inside incense-box, if SVG icon is replaced */
+        .incense-box img {
+            width: 4rem; /* Match previous SVG size */
+            height: 4rem; /* Match previous SVG size */
+            margin-bottom: 1rem;
+            object-fit: contain;
+            filter: drop-shadow(0 0 5px rgba(185, 28, 28, 0.5)); /* Add subtle glow */
+        }
+        /* Modal Styles */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.9); /* พื้นหลัง Modal ดำเข้มขึ้น */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: linear-gradient(to bottom right, #333333, #1a1a1a); /* Gradient ดำ-เทา */
+            border: 2px solid #b91c1c;
+            color: #e0e0e0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            padding: 2.5rem;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #e0e0e0;
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: white;
+        }
+        .incense-animation-area {
+            min-height: 150px; /* Space for animation */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #b91c1c; /* สีแดงสำหรับ countdown */
+            margin-bottom: 1.5rem;
+        }
+        .incense-icon {
+            font-size: 6rem; /* Size of the burning incense visual */
+            color: #b91c1c; /* สีแดงสำหรับไอคอนธูป */
+            animation: pulse 1.5s infinite alternate; /* Simple pulse animation */
+        }
+        .result-numbers {
+            font-size: 4.5rem;
+            font-weight: bold;
+            color: #b91c1c; /* สีแดงเข้มสำหรับเลขนำโชค */
+            letter-spacing: 0.2em;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            margin-top: 1rem;
+        }
+        /* Simple pulse animation for incense icon */
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(1.05); opacity: 0.9; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black">
+    <!-- Three.js Smoke Canvas Container -->
+    <div id="threejs-container"></div>
+
+    <!-- Main Container ของเว็บไซต์ -->
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl bg-gray-900 rounded-3xl shadow-2xl relative overflow-hidden border border-red-900">
+
+        <!-- Header ส่วนบนสุด -->
+        <header class="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-700">
+            <!-- โลโก้/ชื่อเว็บไซต์ -->
+            <div class="flex items-center space-x-3">
+                <!-- อาจใส่รูปศาลเล็กๆ หรือไอคอนที่สื่อถึงได้ -->
+                <svg class="w-10 h-10 text-red-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 102 0V8a1 1 0 00-.445-.832l-1-.5a1 1 0 10-.91 1.664L9 10.432V12a1 1 0 102 0v-1.568l.91 1.664a1 1 0 001.745-.91L10 8V5a1 1 0 10-2 0v3.568L6.445 7.168z" clip-rule="evenodd"></path>
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-100">ศาลพระภูมิให้โชค</h1>
+            </div>
+            <!-- ปุ่ม Login / Register -->
+            <div>
+                {% if logged_in %}
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg text-gray-300">สวัสดี, <span class="font-semibold text-red-400">{{ username }}</span></span>
+                    <span class="text-lg text-gray-300">เครดิต: <span class="font-bold text-green-500" id="user-credits">{{ credits }}</span></span>
+                    <a href="https://line.me/R/msg/text/?เติมเงิน" target="_blank" rel="noopener" class="btn-primary">เติมเครดิต</a>
+                    <a href="/logout" class="btn-secondary text-sm px-4 py-2">ออกจากระบบ</a>
+                </div>
+                {% else %}
+                <div class="space-x-4">
+                    <a href="/register" class="btn-secondary">สมัครสมาชิก</a>
+                    <a href="/login" class="btn-primary">เข้าสู่ระบบ</a>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+            <!-- คอลัมน์ซ้าย -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- ตู้บูชาธูป (แสดงเสมอ แต่เบลอถ้าไม่ได้ Login) -->
+                <section class="incense-box p-6 mt-6 cursor-pointer
+                    {% if not logged_in %}
+                        filter blur-sm
+                    {% endif %}"
+                    onclick="{% if logged_in %}openIncenseModal(){% else %}window.location.href='/login'{% endif %}">
+                    {# เปลี่ยนจาก SVG icon เป็นแท็ก img #}
+                    <img src="/static/images/your_incense_box_image.png" alt="ตู้บูชาธูป" class="w-24 h-24 mb-4 object-contain"> 
+                    <h3 class="text-2xl font-bold mb-2">ตู้บูชาธูป</h3>
+                    <p class="text-lg">คลิกเพื่อบูชาธูป 5 เครดิต</p>
+                </section>
+                {# Moved message outside the box for clarity when blurred #}
+                {% if not logged_in %}
+                    <p class="text-center text-red-400 text-lg mt-4 font-bold">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+                {% endif %}
+
+                <!-- ส่วนแสดงสถิติเลขท้าย 2 ตัวย้อนหลัง 5 งวด -->
+                <section class="data-card p-6 mt-6">
+                    <h2 class="text-xl font-semibold text-gray-200 mb-4 text-center">สถิติเลขท้าย 2 ตัวย้อนหลัง 5 งวด</h2>
+                    <div class="space-y-3 text-lg text-gray-300">
+                        <!-- Loop through latest_lotto_results data passed from Flask -->
+                        {% for result in latest_lotto_results %}
+                        <p class="flex justify-between items-center">
+                            <span>งวดวันที่ {{ result.draw_date }}:</span>
+                            <span class="font-bold text-red-400 text-2xl">{{ result.two_digit_end }}</span>
+                        </p>
+                        {% else %}
+                        <p class="text-center text-gray-500">ไม่พบข้อมูลสถิติ</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- คอลัมน์กลาง (สำหรับศาลพระภูมิ) -->
+            <div class="lg:col-span-2 flex flex-col items-center relative">
+                <!-- องค์พระภูมิ / ศาลเจ้า (รูปภาพจาก Reference) -->
+                <div class="shrine-container w-full max-w-lg p-6 rounded-3xl mb-8">
+                    <!-- Using the image provided by user: majestic.png -->
+                    <img src="/static/images/majestic.png" alt="ศาลพระภูมิ" class="shrine-image w-full h-auto rounded-xl">
+                    <p class="text-center text-sm text-gray-400 mt-4">ตั้งจิตอธิษฐานขอโชคลาภจากองค์ศาลพระภูมิ</p>
+                </div>
+
+                <!-- AI analysis/prediction section for 2-digit end numbers -->
+                <section class="ai-analysis p-6 rounded-xl w-full max-w-lg text-center mb-8">
+                    <h2 class="text-xl font-semibold mb-3 text-gray-100">AI วิเคราะห์เลขนำโชค งวดถัดไป</h2>
+                    <p class="text-lg mb-4 text-gray-200">จากสถิติ 10 ปีที่ผ่านมา มีแนวโน้มสูงที่เลขท้าย 2 ตัวจะออก:</p>
+                    <div class="flex flex-wrap justify-center gap-4 text-3xl font-bold text-red-500">
+                        <!-- Loop through ai_prediction data passed from Flask -->
+                        {% for number in ai_prediction %}
+                        <span class="bg-red-900 px-4 py-2 rounded-lg shadow-md">{{ number }}</span>
+                        {% endfor %}
+                    </div>
+                    <p class="text-sm italic mt-5 text-gray-400">
+                        *ข้อควรทราบ: การทำนายนี้เป็นเพื่อความบันเทิงและข้อมูลทางสถิติเท่านั้น ไม่ได้รับประกันผลการออกรางวัลจริง โปรดใช้วิจารณญาณในการตัดสินใจ
+                    </p>
+                </section>
+            </div>
+            {% if logged_in and role == 'admin' %}
+            <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md">
+                <a href="{{ url_for('admin_users') }}" 
+                class="block text-center bg-red-700 hover:bg-red-900 text-white text-2xl font-bold py-4 rounded-xl shadow-lg transition-colors">
+                ไปหน้าจัดการผู้ใช้งาน (Admin Panel)
+                </a>
+                <a href="{{ url_for('admin_update_page') }}" 
+                class="block mt-4 text-center bg-red-700 hover:bg-red-900 text-white text-2xl font-bold py-4 rounded-xl shadow-lg transition-colors">
+                ไปหน้าอัปเดตผลหวยย้อนหลัง (Admin Update)
+                </a>
+            </div>
+            {% endif %}
+
+        </main>
+
+
+
+        <!-- Footer -->
+        <footer class="mt-8 pt-6 border-t-2 border-gray-700 text-center text-gray-500 text-sm">
+            &copy; 2024 ศาลพระภูมิให้โชคออนไลน์. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- Incense Gimmick Modal -->
+    <div id="incense-modal" class="modal fixed top-0 left-0 w-full h-full flex justify-center items-center z-10 hidden">
+        <div class="modal-content p-6 md:p-8 rounded-xl max-w-sm w-11/12 text-center relative">
+            <button class="close-button absolute top-2 right-2 px-3 py-1 bg-transparent text-gray-400 hover:text-white text-2xl font-bold" onclick="closeIncenseModal()">&times;</button>
+            <h2 id="modal-title" class="text-2xl font-bold text-gray-100 mb-4">บูชาธูปเพื่อขอเลข</h2>
+
+            <!-- Confirmation state -->
+            <div id="confirm-state">
+                <p class="text-lg text-gray-300 mb-6">คุณต้องการบูชาธูป 1 ดอก เพื่อรับเลขท้าย 2 ตัวหรือไม่? (ใช้ 5 เครดิต)</p>
+                <div class="flex justify-center space-x-4">
+                    <button class="btn-primary" onclick="startIncenseGimmick()">ยืนยัน</button>
+                    <button class="btn-secondary" onclick="closeIncenseModal()">ยกเลิก</button>
+                </div>
+            </div>
+
+            <!-- Incense Burning & Countdown state -->
+            <div id="burning-state" class="hidden">
+                <div class="incense-animation-area min-h-[150px] flex justify-center items-center text-5xl font-bold text-red-500 mb-4">
+                    <!-- This will ideally be an animated GIF or SVG of burning incense -->
+                    <span id="incense-icon" class="incense-icon text-red-500">🕯️</span>
+                </div>
+                <p id="countdown-text" class="text-3xl font-bold text-gray-100 mb-4">กำลังจุดธูป... 10</p>
+                <p class="text-md text-gray-300">โปรดรอสักครู่เพื่อรับเลขนำโชคของคุณ</p>
+            </div>
+
+            <!-- Result state -->
+            <div id="result-state" class="hidden">
+                <h3 class="text-xl font-bold text-gray-100 mb-3">เลขนำโชคของคุณคือ:</h3>
+                <div class="result-numbers text-5xl font-bold text-red-500 tracking-widest" id="lucky-number">--</div>
+                <p class="text-md text-gray-300 mt-4">ขอให้โชคดี!</p>
+                <button class="btn-primary mt-6" onclick="closeIncenseModal()">ปิด</button>
+            </div>
+
+            <!-- Error state -->
+            <div id="error-state" class="hidden">
+                <h3 class="text-xl font-bold text-red-600 mb-3">เกิดข้อผิดพลาด!</h3>
+                <p class="text-lg text-gray-300 mb-6">เครดิตไม่เพียงพอ หรือมีข้อผิดพลาดทางเทคนิค</p>
+                <button class="btn-secondary mt-4" onclick="closeIncenseModal()">ปิด</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Three.js Smoke Particle Animation -->
+    <script>
+    async function updateCredits() {
+        try {
+        const res = await fetch('/api/get_credits');
+        const data = await res.json();
+        if(data.success) {
+            document.getElementById('user-credits').textContent = data.credits;
+        }
+        } catch(e) {
+        console.error('Failed to update credits:', e);
+        }
+    }
+
+    window.onload = function() {
+        // เรียก updateCredits ก่อน
+        updateCredits();
+
+        // Three.js scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true }); // alpha: true for transparent background
+
+        const threejsContainer = document.getElementById('threejs-container');
+        if (threejsContainer) {
+            threejsContainer.appendChild(renderer.domElement);
+        } else {
+            document.body.appendChild(renderer.domElement);
+        }
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0); // Transparent black
+
+        camera.position.z = 5;
+
+        const particleCount = 1000;
+        const particles = new THREE.BufferGeometry();
+        const positions = [];
+
+        const material = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: false,
+            color: 0xcccccc,
+            transparent: true,
+            opacity: 0.1,
+            blending: THREE.AdditiveBlending
+        });
+
+        for (let i = 0; i < particleCount; i++) {
+            positions.push((Math.random() - 0.5) * 20);
+            positions.push((Math.random() - 0.5) * 20);
+            positions.push((Math.random() - 0.5) * 20);
+        }
+
+        particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        const particleSystem = new THREE.Points(particles, material);
+        scene.add(particleSystem);
+
+        function animate() {
+        requestAnimationFrame(animate);
+        const positionsArray = particles.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            positionsArray[i * 3 + 1] += 0.01;
+            if (positionsArray[i * 3 + 1] > 10) {
+                positionsArray[i * 3 + 1] = -10;
+            }
+        }
+        particles.attributes.position.needsUpdate = true;
+
+        camera.rotation.y += 0.0005;
+        camera.rotation.x += 0.0002;
+
+        renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    };
+    </script>
+
+</body>
+</html>
