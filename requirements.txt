@@ -5,4 +5,4 @@ python-dotenv==1.0.0
 Werkzeug==2.3.6
 line-bot-sdk
 gunicorn==20.1.0
-pymongo[srv]==3.12
+certifi
