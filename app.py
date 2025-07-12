@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from pymongo import MongoClient
+import urllib.parse
 from dotenv import load_dotenv
 import os
 from datetime import datetime
@@ -26,8 +27,13 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_key_for_dev') 
 # For deployment, ensure you configure MONGODB_URI environment variable
 mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
 # client = MongoClient(mongo_uri)
-client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where())
-db = client.shrine_lotto # Database name
+client = MongoClient(
+    mongo_uri,
+    tls=True,
+    tlsAllowInvalidCertificates=False,
+    serverSelectionTimeoutMS=5000
+)
+db = client.shrine_lotto
 
 # Collection for lottery results (unused but kept for consistency)
 lotto_results_collection = db.lotto_results
