@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from dotenv import load_dotenv
 import os
+print("Credentials Path:", os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
 from datetime import datetime
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
