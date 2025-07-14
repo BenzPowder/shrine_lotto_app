@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/etc/secrets/credentials.json')
+print(f"Credentials Path: {SERVICE_ACCOUNT_FILE}")
+
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SPREADSHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 
