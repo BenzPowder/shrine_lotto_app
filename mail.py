@@ -406,5 +406,4 @@ if __name__ == '__main__':
         seed_historical_data_to_sheet()
     else:
         print("Google Sheets already has data. Skipping seeding.")
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
