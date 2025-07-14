@@ -400,7 +400,6 @@ def seed_historical_data_to_sheet():
 
 if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
-    # เช็ค Google Sheets ว่างไหม
     current_data = read_range(SHEET_LOTTO_RANGE)
     if not current_data or len(current_data) == 0:
         print("Google Sheets is empty. Seeding initial historical lotto data.")
@@ -408,4 +407,4 @@ if __name__ == '__main__':
     else:
         print("Google Sheets already has data. Skipping seeding.")
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
