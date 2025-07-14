@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 print("Credentials Path:", os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
 from datetime import datetime
+import pytz
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -77,6 +78,16 @@ STATIC_HISTORICAL_LOTTO_DATA = [
     {"date": "2024-04-01", "two_digits": "18"},
 ]
 
+# เพิ่มฟังก์ชันนี้ใน app.py เลย
+def utc_to_bangkok(utc_dt):
+    bangkok_tz = pytz.timezone('Asia/Bangkok')
+    utc_tz = pytz.utc
+    # กำหนด timezone ให้ utc_dt เป็น UTC ก่อน
+    if utc_dt.tzinfo is None:
+        utc_dt = utc_tz.localize(utc_dt)
+    # แปลงเป็นเวลาบางกอก
+    return utc_dt.astimezone(bangkok_tz)
+
 def get_all_users():
     rows = read_range(SHEET_USERS_RANGE)
     users = []
@@ -145,11 +156,16 @@ def fetch_latest_lotto_results_from_sheet():
             continue
         date_str, two_digits = row[0], row[1]
         try:
+            # แปลง string เป็น datetime แบบไม่มี timezone (สมมติเป็น UTC)
             dt_object = datetime.strptime(date_str, '%Y-%m-%d')
-            draw_date_display = dt_object.strftime('%d/%m/') + str(dt_object.year + 543)
+            # แปลง UTC > Bangkok
+            dt_object_bkk = utc_to_bangkok(dt_object)
+            # แสดงวันที่แบบ dd/mm/yyyy + ปี พศ. (อิงเวลาบางกอก)
+            draw_date_display = dt_object_bkk.strftime('%d/%m/') + str(dt_object_bkk.year + 543)
             results.append({"draw_date": draw_date_display, "two_digit_end": two_digits})
         except Exception:
             continue
+    # เรียงจากใหม่สุดไปเก่าสุด (แปลงกลับมาเป็น datetime จริงเพื่อ sort)
     results.sort(key=lambda x: datetime.strptime(x['draw_date'], '%d/%m/%Y'), reverse=True)
     return results[:5]
 
