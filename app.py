@@ -8,6 +8,8 @@ import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from gsheet_db import read_range, write_range  # เชื่อม Google Sheets API
+import datetime
+print("Server UTC time:", datetime.datetime.utcnow())
 load_dotenv()
 
 app = Flask(__name__)
